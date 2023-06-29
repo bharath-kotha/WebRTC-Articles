@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebRTC Video Conferencing</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>WebRTC Video Conferencing</h1>
+        <div class="form-group">
+            <label for="meetingId">Meeting ID:</label>
+            <input type="text" id="meetingId">
+        </div>
+        <div class="form-group">
+            <label for="role">Role:</label>
+            <select id="role">
+                <option value="initiator">WebRTC SDP Initiator</option>
+                <option value="receiver">WebRTC SDP Receiver</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <button id="joinButton">Join Conference</button>
+        </div>
+        <div class="video-container">
+            <div class="local-video">
+                <h2>Local Video</h2>
+                <video id="localVideo" autoplay muted></video>
+            </div>
+            <div class="remote-video">
+                <h2>Remote Video</h2>
+                <video id="remoteVideo" autoplay></video>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
