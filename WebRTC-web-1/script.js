@@ -1,13 +1,9 @@
-// Variables to store local and remote video elements
-const localVideo = document.getElementById('localVideo');
-const remoteVideo = document.getElementById('remoteVideo');
-
 // Variables to store local media stream and WebRTC connection
-let localStream, rtcConnection;
+let rtcConnection;
 
 // Variables to store MQTT client and configuration
-const mqttBroker = 'wss://mqtt-dashboard.com:8884/mqtt'; // Replace with your MQTT broker URL
-const mqttTopicPrefix = 'webrtc/conference/'; // Replace with your MQTT topic
+const mqttBroker = 'wss://mqtt-dashboard.com:8884/mqtt';
+const mqttTopicPrefix = 'webrtc/conference/';
 let mqttClient;
 
 // Function to handle MQTT message
@@ -18,13 +14,10 @@ function handleMqttMessage(topic, message) {
     // Ignore self messages
     if(payload.role === role) return;
 
-    // Check if the message is for this meeting ID
-    if (payload.meetingId === document.getElementById('meetingId').value) {
-        if (payload.type === 'sdp') {
-            handleSdpMessage(payload.sdp);
-        } else if (payload.type === 'ice') {
-            handleIceCandidate(payload.candidate);
-        }
+    if (payload.type === 'sdp') {
+        handleSdpMessage(payload.sdp);
+    } else if (payload.type === 'ice') {
+        handleIceCandidate(payload.candidate);
     }
 }
 
@@ -79,11 +72,18 @@ function sendMqttMessage(payload) {
 
 // Function to set up local media
 async function setupLocalMedia() {
+    let localStream;
     try {
         // Request access to user's camera and microphone
         localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
 
+        // Add local media stream tracks to the connection
+        localStream.getTracks().forEach((track) => {
+            rtcConnection.addTrack(track, localStream);
+        });
+
         // Display local video stream in the local video element
+        const localVideo = document.getElementById('localVideo');
         localVideo.srcObject = localStream;
     } catch (error) {
         console.error('Error accessing local media:', error);
@@ -95,11 +95,6 @@ function createConnection() {
     // Create a new WebRTC connection with STUN server configuration
     const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
     rtcConnection = new RTCPeerConnection(configuration);
-
-    // Add local media stream tracks to the connection
-    localStream.getTracks().forEach((track) => {
-        rtcConnection.addTrack(track, localStream);
-    });
 
     // Set up event listeners for the connection
 
@@ -141,6 +136,7 @@ function createConnection() {
 
     // Set remote video stream as the source for the remote video element
     rtcConnection.addEventListener('track', (event) => {
+        const remoteVideo = document.getElementById('remoteVideo');
         if (event.track.kind === 'video') {
             remoteVideo.srcObject = event.streams[0];
         }
@@ -166,9 +162,10 @@ async function joinConference() {
     // Handle MQTT message
     mqttClient.on('message', handleMqttMessage);
 
+    
+    createConnection();
     // Set up local media and create the WebRTC connection
     await setupLocalMedia();
-    createConnection();
 }
 
 // Event listener for the "Join Conference" button
