@@ -42,7 +42,6 @@ async function handleSdpMessage(sdp) {
             sendMqttMessage({
                 meetingId: document.getElementById('meetingId').value,
                 type: 'sdp',
-                role: document.getElementById('role').value,
                 sdp: rtcConnection.localDescription.sdp
             });
         }
@@ -66,7 +65,11 @@ async function handleIceCandidate(candidate, role) {
 // Function to send MQTT message
 function sendMqttMessage(payload) {
     const meetingId = document.getElementById('meetingId').value;
+    const role = document.getElementById('role').value;
+
     const mqttTopic = mqttTopicPrefix + meetingId
+    payload.role = role;
+
     mqttClient.publish(mqttTopic, JSON.stringify(payload));
 }
 
@@ -113,7 +116,6 @@ function createConnection() {
             sendMqttMessage({
                 meetingId: document.getElementById('meetingId').value,
                 type: 'sdp',
-                role: document.getElementById('role').value,
                 sdp: rtcConnection.localDescription.sdp
             });
         } catch (error) {
@@ -128,7 +130,6 @@ function createConnection() {
             sendMqttMessage({
                 meetingId: document.getElementById('meetingId').value,
                 type: 'ice',
-                role: document.getElementById('role').value,
                 candidate: event.candidate
             });
         }
