@@ -12,13 +12,8 @@ class MQTT(val topic: String,val callback: (String, String) -> Unit) {
     val pendingMessage: ArrayList<String> = arrayListOf()
     init {
         val clientId = UUID.randomUUID().toString()
-        val webSocketConfig = MqttWebSocketConfig.builder()
-            .serverPath("mqtt")
-            .build()
         client = MqttClient.builder()
             .identifier(clientId)
-//            .webSocketConfig(webSocketConfig)
-//            .transportConfig()
             .serverHost("mqtt-dashboard.com")
             .serverPort(1883)
             .useMqttVersion5()
@@ -29,11 +24,13 @@ class MQTT(val topic: String,val callback: (String, String) -> Unit) {
             if (throwable != null) {
                 Log.e(TAG, "Connection Error: ${throwable.cause}", )
             }
-            Log.i(TAG, "Connected. Sending queued messages ")
-            pendingMessage.forEach {message ->
-                publishInternal(message)
+            else {
+                Log.i(TAG, "Connected. Sending queued messages ")
+                pendingMessage.forEach { message ->
+                    publishInternal(message)
+                }
+                pendingMessage.clear()
             }
-            pendingMessage.clear()
         }
 
         client.publishes(MqttGlobalPublishFilter.ALL) { message ->
@@ -42,6 +39,7 @@ class MQTT(val topic: String,val callback: (String, String) -> Unit) {
             callback(topic, payload)
         }
 
+        // Subscribe to topic
         client.subscribeWith()
             .topicFilter(topic)
             .send()

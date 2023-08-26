@@ -5,11 +5,9 @@ import android.view.View
 import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
 import com.bharathkotha.webrtcdemo1.databinding.ActivityMainBinding
-import org.webrtc.EglBase
 
 
 class MainActivity : AppCompatActivity() {
-    var eglBase : EglBase? = null
     lateinit var binding : ActivityMainBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -17,8 +15,6 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         addSpinnerOptions(binding)
         setContentView(binding.root)
-
-        eglBase = EglBase.create()
 
         binding.startConference.setOnClickListener {
             hideConfiguration()

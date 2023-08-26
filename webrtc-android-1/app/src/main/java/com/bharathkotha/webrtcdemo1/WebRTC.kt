@@ -40,11 +40,9 @@ object WebRTC {
     lateinit var mqttTopic : String
 
     fun createPeerConnection(context : Context) {
-        // Initialize PeerConnectionFactory and EglBase
-        // Initialize PeerConnectionFactory and EglBase
+        // Initialize PeerConnectionFactory
         val options = PeerConnectionFactory.InitializationOptions.builder(context)
             .setEnableInternalTracer(true)
-            .setFieldTrials("IncludeWifiDirect/Enabled/")
             .createInitializationOptions()
         PeerConnectionFactory.initialize(options)
         peerConnFactory = PeerConnectionFactory.builder()
@@ -52,7 +50,6 @@ object WebRTC {
             .setVideoDecoderFactory(DefaultVideoDecoderFactory(eglBase?.eglBaseContext))
             .setVideoEncoderFactory(DefaultVideoEncoderFactory(eglBase?.eglBaseContext, true, true))
             .setOptions(PeerConnectionFactory.Options().apply {
-//                disableEncryption = true
                 disableNetworkMonitor = true
             })
             .createPeerConnectionFactory()
@@ -61,19 +58,12 @@ object WebRTC {
         iceBuilder.setTlsCertPolicy(PeerConnection.TlsCertPolicy.TLS_CERT_POLICY_INSECURE_NO_CHECK)
         val iceServers = arrayListOf(iceBuilder.createIceServer())
 
-        val rtcConfig =
-            PeerConnection.RTCConfiguration(iceServers) //The rtcConfig object is used to configure the PeerConnection object, which is used to establish a WebRTC connection between two peers. The ICE servers specified in rtcConfig are used to gather ICE candidates, which are then exchanged between the peers to establish a connection.
-        // TCP candidates are only useful when connecting to a server that supports, ICE-TCP.
-        rtcConfig.tcpCandidatePolicy = PeerConnection.TcpCandidatePolicy.DISABLED //disabling TCP candidates
-        //enabling BUNDLE (a mechanism for bundling multiple streams into a single transport).
+        val rtcConfig = PeerConnection.RTCConfiguration(iceServers)
+        rtcConfig.tcpCandidatePolicy = PeerConnection.TcpCandidatePolicy.DISABLED
         rtcConfig.bundlePolicy = PeerConnection.BundlePolicy.MAXBUNDLE
-        //requiring RTCP muxing (a mechanism for multiplexing multiple RTP sessions on a single transport).
         rtcConfig.rtcpMuxPolicy = PeerConnection.RtcpMuxPolicy.REQUIRE
-        //enabling continual ICE candidate gathering.
         rtcConfig.continualGatheringPolicy = PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY
-        // Use ECDSA encryption.
-        rtcConfig.keyType = PeerConnection.KeyType.ECDSA // indicating that ECDSA should be used for encryption.
-        //using the "unified plan" SDP format for session negotiation.
+        rtcConfig.keyType = PeerConnection.KeyType.ECDSA
         rtcConfig.sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
 
         peerConnection = peerConnFactory?.createPeerConnection(rtcConfig, object : PeerConnection.Observer{
@@ -142,6 +132,8 @@ object WebRTC {
 
     fun addVideoTracks(context: Context){
         Log.i(TAG, "addTracks: In add tracks method")
+        //The video source represents a local video stream. It provides video frames to the peer connection for encoding, transmission, and rendering.
+        val localVideoSource = peerConnFactory?.createVideoSource(false)
         val enumerator = Camera2Enumerator(context)
         val deviceNames = enumerator.deviceNames
 
@@ -151,14 +143,15 @@ object WebRTC {
             }
         }
 
-        for (deviceName in deviceNames) {
-            if (!enumerator.isFrontFacing(deviceName)) {
-                videoCapturer = enumerator.createCapturer(deviceName, null)
+        if(videoCapturer == null) {
+            for (deviceName in deviceNames) {
+                if (!enumerator.isFrontFacing(deviceName)) {
+                    videoCapturer = enumerator.createCapturer(deviceName, null)
+                }
             }
         }
 
         val surfaceTextureHelper = SurfaceTextureHelper.create(Thread.currentThread().name, eglBase.eglBaseContext)
-        val localVideoSource = peerConnFactory?.createVideoSource(false)                                     //The video source represents a local video stream. It provides video frames to the peer connection for encoding, transmission, and rendering.
         videoCapturer?.initialize(surfaceTextureHelper, context/*localVideoOutput.context*/, localVideoSource?.capturerObserver)        // preparing it for capturing video frames from the camera or video input device
 
         localVideoTrack = peerConnFactory?.createVideoTrack("Video", localVideoSource)
