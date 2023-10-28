@@ -121,6 +121,7 @@ object WebRTC {
 
             override fun onRenegotiationNeeded() {
                 Log.i(TAG, "onRenegotiationNeeded: ")
+                createAndSendLocalDescription()
             }
 
             override fun onTrack(transceiver: RtpTransceiver?) {
@@ -284,12 +285,10 @@ object WebRTC {
     }
 
     private fun handleSdpMessage(message: JSONObject) {
-        // TODO change this to perfect negotiation
         val polite = selfId < remoteId!!
         val sdpTypeInt = message.get("sdpType") as Int
-//        val sdpType = SessionDescription.Type.values().first { it.ordinal == sdpTypeInt }
         val sdpType = SessionDescription.Type.values()[sdpTypeInt]
-        val collision = makingOffer && sdpType == SessionDescription.Type.OFFER && peerConnection!!.signalingState() != PeerConnection.SignalingState.STABLE
+        val collision = sdpType == SessionDescription.Type.OFFER && (makingOffer || peerConnection!!.signalingState() != PeerConnection.SignalingState.STABLE)
         ignoreOffer = !polite && collision
         Log.i(TAG, "handleSdpMessage: polite: $polite ignoreOffer: $ignoreOffer")
         if(ignoreOffer) {
